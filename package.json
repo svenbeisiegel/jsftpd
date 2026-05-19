@@ -29,18 +29,18 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "c8": "11.0.0",
     "eslint": "10.4.0",
     "eslint-plugin-jsdoc": "62.9.0",
     "eslint-plugin-security": "4.0.0",
     "globals": "17.6.0",
     "husky": "9.1.7",
-    "jest": "30.4.2",
     "promise-socket": "8.0.0"
   },
   "scripts": {
     "lint:js": "eslint lib/",
     "install-dev": "npm install --save-dev && husky install",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand"
+    "test": "c8 node --test --test-reporter=spec --test-concurrency=1 'test/*.test.js'"
   },
   "license": "MIT",
   "engines": {

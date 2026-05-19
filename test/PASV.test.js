@@ -1,11 +1,12 @@
-import { jest } from '@jest/globals'
+import { test, beforeEach, afterEach } from 'node:test'
+import assert from 'node:assert/strict'
 import { ftpd } from '../index.js'
 import net from 'node:net'
 import tls from 'node:tls'
 import { PromiseSocket } from 'promise-socket'
 import { sleep, getCmdPortTCP, getDataPort, formatPort } from './utils.js'
 
-jest.setTimeout(5000)
+const timeout = 5000
 let server, content, dataContent = null
 const cmdPortTCP = getCmdPortTCP()
 const dataPort = getDataPort()
@@ -22,7 +23,7 @@ const cleanup = function() {
 beforeEach(() => cleanup())
 afterEach(() => cleanup())
 
-test('test PASV message takes next free port', async () => {
+test('test PASV message takes next free port', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -36,23 +37,23 @@ test('test PASV message takes next free port', async () => {
         maxConnections: 1
     }
     server = new ftpd({cnf: config})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(cmdPortTCP, '127.0.0.1', 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     const passiveModeData = formatPort('127.0.0.1', (cmdPortTCP + 1))
     await promiseSocket.write('PASV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`227 Entering passive mode (${passiveModeData})`)
+    assert.strictEqual(content.toString().trim(), `227 Entering passive mode (${passiveModeData})`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -62,19 +63,19 @@ test('test PASV message takes next free port', async () => {
     content = await promiseSocket.read()
 
     dataContent = await promiseDataSocket.read()
-    expect(dataContent.toString().trim()).toBe('')
+    assert.strictEqual(dataContent.toString().trim(), '')
     await promiseDataSocket.end()
 
     await sleep(100)
 
     content += await promiseSocket.read()
-    expect(content.toString().trim()).toMatch('150 Opening data channel')
-    expect(content.toString().trim()).toMatch('226 Successfully transferred "/"')
+    assert.match(content.toString().trim(), /150 Opening data channel/)
+    assert.match(content.toString().trim(), /226 Successfully transferred "\/"/)
 
     await promiseSocket.end()
 })
 
-test('test PASV message fails port unavailable', async () => {
+test('test PASV message fails port unavailable', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -89,27 +90,27 @@ test('test PASV message fails port unavailable', async () => {
     }
     server = new ftpd({cnf: config})
     server._tcp.maxConnections = 10
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(cmdPortTCP, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('PASV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('501 Passive command failed')
+    assert.strictEqual(content.toString().trim(), '501 Passive command failed')
 
     await promiseSocket.end()
 })
 
-test('test PASV message fails port range fails', async () => {
+test('test PASV message fails port range fails', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -124,28 +125,28 @@ test('test PASV message fails port range fails', async () => {
     }
     server = new ftpd({cnf: config})
     server._tcp.maxConnections = 10
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(cmdPortTCP, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('PASV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('501 Passive command failed')
+    assert.strictEqual(content.toString().trim(), '501 Passive command failed')
 
     await promiseSocket.end()
 })
 
 
-test('test EPSV message takes next free port', async () => {
+test('test EPSV message takes next free port', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -159,22 +160,22 @@ test('test EPSV message takes next free port', async () => {
         maxConnections: 1
     }
     server = new ftpd({cnf: config})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(cmdPortTCP, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${(cmdPortTCP + 1)}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${(cmdPortTCP + 1)}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -184,19 +185,19 @@ test('test EPSV message takes next free port', async () => {
     content = await promiseSocket.read()
 
     dataContent = await promiseDataSocket.read()
-    expect(dataContent.toString().trim()).toBe('')
+    assert.strictEqual(dataContent.toString().trim(), '')
     await promiseDataSocket.end()
 
     await sleep(100)
 
     content += await promiseSocket.read()
-    expect(content.toString().trim()).toMatch('150 Opening data channel')
-    expect(content.toString().trim()).toMatch('226 Successfully transferred "/"')
+    assert.match(content.toString().trim(), /150 Opening data channel/)
+    assert.match(content.toString().trim(), /226 Successfully transferred "\/"/)
 
     await promiseSocket.end()
 })
 
-test('test EPSV message fails port unavailable', async () => {
+test('test EPSV message fails port unavailable', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -211,22 +212,22 @@ test('test EPSV message fails port unavailable', async () => {
     }
     server = new ftpd({cnf: config})
     server._tcp.maxConnections = 10
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(cmdPortTCP, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('501 Extended passive command failed')
+    assert.strictEqual(content.toString().trim(), '501 Extended passive command failed')
 
     await promiseSocket.end()
 })

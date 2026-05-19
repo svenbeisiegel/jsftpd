@@ -1,11 +1,12 @@
-import { jest } from '@jest/globals'
+import { test, beforeEach, afterEach, mock } from 'node:test'
+import assert from 'node:assert/strict'
 import { ftpd } from '../index.js'
 import net from 'node:net'
 import tls from 'node:tls'
 import { PromiseSocket } from 'promise-socket'
 import { sleep, getCmdPortTCP, getDataPort } from './utils.js'
 
-jest.setTimeout(7500)
+const timeout = 7500
 let server, content, dataContent = null
 const cmdPortTCP = getCmdPortTCP()
 const dataPort = getDataPort()
@@ -22,7 +23,7 @@ const cleanup = function() {
 beforeEach(() => cleanup())
 afterEach(() => cleanup())
 
-test('test STOR message without permission', async () => {
+test('test STOR message without permission', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -31,22 +32,22 @@ test('test STOR message without permission', async () => {
         }
     ]
     server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(50021, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -54,13 +55,13 @@ test('test STOR message without permission', async () => {
 
     await promiseSocket.write('STOR mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('550 Transfer failed "mytestfile"')
+    assert.strictEqual(content.toString().trim(), '550 Transfer failed "mytestfile"')
 
     await dataSocket.end()
     await promiseSocket.end()
 })
 
-test('test STOR message', async () => {
+test('test STOR message', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -68,26 +69,26 @@ test('test STOR message', async () => {
         }
     ]
     server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(50021, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('STOR ../../mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('550 Transfer failed "../../mytestfile"')
+    assert.strictEqual(content.toString().trim(), '550 Transfer failed "../../mytestfile"')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -95,18 +96,18 @@ test('test STOR message', async () => {
 
     await promiseSocket.write('STOR mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('150 Opening data channel')
+    assert.strictEqual(content.toString().trim(), '150 Opening data channel')
 
     await promiseDataSocket.write('SOMETESTCONTENT')
     dataSocket.end()
     await promiseDataSocket.end()
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('226 Successfully transferred "mytestfile"')
+    assert.strictEqual(content.toString().trim(), '226 Successfully transferred "mytestfile"')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     promiseDataSocket = new PromiseSocket(new net.Socket())
     dataSocket = promiseDataSocket.stream
@@ -115,21 +116,21 @@ test('test STOR message', async () => {
     await promiseSocket.write('MLSD')
 
     dataContent = await promiseDataSocket.read()
-    expect(dataContent.toString().trim()).toMatch('type=file')
-    expect(dataContent.toString().trim()).toMatch('size=15')
-    expect(dataContent.toString().trim()).toMatch('mytestfile')
+    assert.match(dataContent.toString().trim(), /type=file/)
+    assert.match(dataContent.toString().trim(), /size=15/)
+    assert.match(dataContent.toString().trim(), /mytestfile/)
     await promiseDataSocket.end()
 
     await sleep(100)
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toMatch('150 Opening data channel')
-    expect(content.toString().trim()).toMatch('226 Successfully transferred "/"')
+    assert.match(content.toString().trim(), /150 Opening data channel/)
+    assert.match(content.toString().trim(), /226 Successfully transferred "\/"/)
 
     await promiseSocket.end()
 })
 
-test('test STOR message failes due to socket timeout', async () => {
+test('test STOR message failes due to socket timeout', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -137,38 +138,38 @@ test('test STOR message failes due to socket timeout', async () => {
         }
     ]
     server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(50021, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('STOR ../../mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('550 Transfer failed "../../mytestfile"')
+    assert.strictEqual(content.toString().trim(), '550 Transfer failed "../../mytestfile"')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
     await dataSocket.connect(dataPort, 'localhost')
 
     await sleep(5500)
-    expect(dataSocket.destroyed).toBe(true)
+    assert.strictEqual(dataSocket.destroyed, true)
 
     await promiseSocket.end()
 })
 
-test('test STOR message with ASCII', async () => {
+test('test STOR message with ASCII', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -176,30 +177,30 @@ test('test STOR message with ASCII', async () => {
         }
     ]
     server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(50021, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('TYPE A')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('200 Type set to ASCII')
+    assert.strictEqual(content.toString().trim(), '200 Type set to ASCII')
 
     await promiseSocket.write('STOR ../../mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('550 Transfer failed "../../mytestfile"')
+    assert.strictEqual(content.toString().trim(), '550 Transfer failed "../../mytestfile"')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -208,18 +209,18 @@ test('test STOR message with ASCII', async () => {
 
     await promiseSocket.write('STOR mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('150 Opening data channel')
+    assert.strictEqual(content.toString().trim(), '150 Opening data channel')
 
     await promiseDataSocket.write('SOMETESTCONTENT')
     dataSocket.end()
     await promiseDataSocket.end()
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('226 Successfully transferred "mytestfile"')
+    assert.strictEqual(content.toString().trim(), '226 Successfully transferred "mytestfile"')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     promiseDataSocket = new PromiseSocket(new net.Socket())
     dataSocket = promiseDataSocket.stream
@@ -229,22 +230,22 @@ test('test STOR message with ASCII', async () => {
     await promiseSocket.write('MLSD')
 
     dataContent = await promiseDataSocket.read()
-    expect(dataContent.toString().trim()).toMatch('type=file')
-    expect(dataContent.toString().trim()).toMatch('size=15')
-    expect(dataContent.toString().trim()).toMatch('mytestfile')
+    assert.match(dataContent.toString().trim(), /type=file/)
+    assert.match(dataContent.toString().trim(), /size=15/)
+    assert.match(dataContent.toString().trim(), /mytestfile/)
     await promiseDataSocket.end()
 
     await sleep(100)
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toMatch('150 Opening data channel')
-    expect(content.toString().trim()).toMatch('226 Successfully transferred "/"')
+    assert.match(content.toString().trim(), /150 Opening data channel/)
+    assert.match(content.toString().trim(), /226 Successfully transferred "\/"/)
 
     await promiseSocket.end()
 })
 
 
-test('test STOR message overwrite not allowed', async () => {
+test('test STOR message overwrite not allowed', { timeout }, async () => {
     const users = [
         {
             username: 'john',
@@ -253,26 +254,26 @@ test('test STOR message overwrite not allowed', async () => {
         }
     ]
     server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(50021, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('STOR ../../mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('550 Transfer failed "../../mytestfile"')
+    assert.strictEqual(content.toString().trim(), '550 Transfer failed "../../mytestfile"')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -280,18 +281,18 @@ test('test STOR message overwrite not allowed', async () => {
 
     await promiseSocket.write('STOR mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('150 Opening data channel')
+    assert.strictEqual(content.toString().trim(), '150 Opening data channel')
 
     await promiseDataSocket.write('SOMETESTCONTENT')
     dataSocket.end()
     await promiseDataSocket.end()
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('226 Successfully transferred "mytestfile"')
+    assert.strictEqual(content.toString().trim(), '226 Successfully transferred "mytestfile"')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     promiseDataSocket = new PromiseSocket(new net.Socket())
     dataSocket = promiseDataSocket.stream
@@ -300,49 +301,49 @@ test('test STOR message overwrite not allowed', async () => {
     await promiseSocket.write('MLSD')
 
     dataContent = await promiseDataSocket.read()
-    expect(dataContent.toString().trim()).toMatch('type=file')
-    expect(dataContent.toString().trim()).toMatch('size=15')
-    expect(dataContent.toString().trim()).toMatch('mytestfile')
+    assert.match(dataContent.toString().trim(), /type=file/)
+    assert.match(dataContent.toString().trim(), /size=15/)
+    assert.match(dataContent.toString().trim(), /mytestfile/)
     await promiseDataSocket.end()
 
     await sleep(100)
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toMatch('150 Opening data channel')
-    expect(content.toString().trim()).toMatch('226 Successfully transferred "/"')
+    assert.match(content.toString().trim(), /150 Opening data channel/)
+    assert.match(content.toString().trim(), /226 Successfully transferred "\/"/)
 
     await promiseSocket.write('STOR /mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('550 File already exists')
+    assert.strictEqual(content.toString().trim(), '550 File already exists')
 
     await promiseSocket.end()
 })
 
-test('test STOR message with handler', async () => {
+test('test STOR message with handler', { timeout }, async () => {
     const users = [
         {
             username: 'john',
             allowLoginWithoutPassword: true,
         }
     ]
-    const up = jest.fn().mockImplementationOnce(() => Promise.resolve(true))
+    const up = mock.fn(() => Promise.resolve(true))
     server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}, hdl:{upload: up}})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(50021, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -350,54 +351,46 @@ test('test STOR message with handler', async () => {
 
     await promiseSocket.write('STOR mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('150 Opening data channel')
+    assert.strictEqual(content.toString().trim(), '150 Opening data channel')
 
     await promiseDataSocket.write('SOMETESTCONTENT')
     dataSocket.end()
     await promiseDataSocket.end()
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('226 Successfully transferred "mytestfile"')
+    assert.strictEqual(content.toString().trim(), '226 Successfully transferred "mytestfile"')
 
-    expect(up).toHaveBeenCalledTimes(1)
-    expect(up).toHaveBeenCalledWith('john', '/', 'mytestfile', Buffer.from('SOMETESTCONTENT'), 0)
+    assert.strictEqual(up.mock.callCount(), 1)
+    assert.deepStrictEqual(up.mock.calls[0].arguments, ['john', '/', 'mytestfile', Buffer.from('SOMETESTCONTENT'), 0])
 
     await promiseSocket.end()
 })
 
-test('test STOR message with handler fails', async () => {
+test('test STOR message with handler fails', { timeout }, async () => {
     const users = [
         {
             username: 'john',
             allowLoginWithoutPassword: true,
         }
     ]
-    const handler = async (username, path, filename, data, offset) => {
-        expect(username).toMatch('john')
-        expect(filename).toMatch('mytestfile')
-        expect(path).toMatch('/')
-        expect(data.toString()).toMatch('SOMETESTCONTENT')
-        expect(offset).toBe(0)
-        return false
-    }
-    const up = jest.fn().mockImplementationOnce(() => Promise.resolve(false))
+    const up = mock.fn(() => Promise.resolve(false))
     server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}, hdl:{upload: up}})
-    expect(server).toBeInstanceOf(ftpd)
+    assert.ok(server instanceof ftpd)
     server.start()
 
     let promiseSocket = new PromiseSocket(new net.Socket())
     let socket = promiseSocket.stream
     await socket.connect(50021, 'localhost')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('220 Welcome')
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
 
     await promiseSocket.write('USER john')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('232 User logged in')
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
 
     await promiseSocket.write('EPSV')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe(`229 Entering extended passive mode (|||${dataPort}|)`)
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
 
     let promiseDataSocket = new PromiseSocket(new net.Socket())
     let dataSocket = promiseDataSocket.stream
@@ -405,17 +398,17 @@ test('test STOR message with handler fails', async () => {
 
     await promiseSocket.write('STOR mytestfile')
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('150 Opening data channel')
+    assert.strictEqual(content.toString().trim(), '150 Opening data channel')
 
     await promiseDataSocket.write('SOMETESTCONTENT')
     dataSocket.end()
     await promiseDataSocket.end()
 
     content = await promiseSocket.read()
-    expect(content.toString().trim()).toBe('550 Transfer failed "mytestfile"')
+    assert.strictEqual(content.toString().trim(), '550 Transfer failed "mytestfile"')
 
-    expect(up).toHaveBeenCalledTimes(1)
-    expect(up).toHaveBeenCalledWith('john', '/', 'mytestfile', Buffer.from('SOMETESTCONTENT'), 0)
+    assert.strictEqual(up.mock.callCount(), 1)
+    assert.deepStrictEqual(up.mock.calls[0].arguments, ['john', '/', 'mytestfile', Buffer.from('SOMETESTCONTENT'), 0])
 
     await promiseSocket.end()
 })
