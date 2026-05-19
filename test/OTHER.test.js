@@ -1072,3 +1072,423 @@ test('test EPRT message', { timeout }, async () => {
     await promiseDataSocket.stream.close()
     await promiseSocket.end()
 })
+
+test('test NOOP before authentication', { timeout }, async () => {
+    server = new ftpd({cnf: {port: cmdPortTCP, username: 'john', password: 'test'}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('NOOP')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '200 NOOP ok')
+
+    await promiseSocket.end()
+})
+
+test('test NOOP after authentication', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('NOOP')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '200 NOOP ok')
+
+    await promiseSocket.end()
+})
+
+test('test MODE S accepted', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('MODE S')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '200 Mode set to Stream')
+
+    await promiseSocket.end()
+})
+
+test('test MODE B rejected', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('MODE B')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '504 Only stream mode is supported')
+
+    await promiseSocket.end()
+})
+
+test('test STRU F accepted', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('STRU F')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '200 Structure set to File')
+
+    await promiseSocket.end()
+})
+
+test('test STRU R rejected', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('STRU R')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '504 Only file structure is supported')
+
+    await promiseSocket.end()
+})
+
+test('test ABOR with no active transfer', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('ABOR')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '226 Abort successful')
+
+    await promiseSocket.end()
+})
+
+test('test CDUP from subfolder', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+            allowUserFolderCreate: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('MKD testfolder')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '250 Folder created successfully')
+
+    await promiseSocket.write('CWD testfolder')
+    content = await promiseSocket.read()
+    assert.match(content.toString().trim(), /250/)
+    assert.match(content.toString().trim(), /testfolder/)
+
+    await promiseSocket.write('CDUP')
+    content = await promiseSocket.read()
+    assert.match(content.toString().trim(), /250/)
+    assert.match(content.toString().trim(), /"\/"/)
+
+    await promiseSocket.end()
+})
+
+test('test CDUP from root stays at root', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('CDUP')
+    content = await promiseSocket.read()
+    assert.match(content.toString().trim(), /250/)
+    assert.match(content.toString().trim(), /"\/"/)
+
+    await promiseSocket.end()
+})
+
+test('test STAT without argument returns server status', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('STAT')
+    content = await promiseSocket.read()
+    assert.match(content.toString().trim(), /211/)
+    assert.match(content.toString().trim(), /john/)
+
+    await promiseSocket.end()
+})
+
+test('test STAT with file argument returns file info', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+            allowUserFolderCreate: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users, minDataPort: dataPort}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('MKD statfolder')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '250 Folder created successfully')
+
+    await promiseSocket.write('STAT statfolder')
+    content = await promiseSocket.read()
+    assert.match(content.toString().trim(), /213/)
+    assert.match(content.toString().trim(), /statfolder/)
+
+    await promiseSocket.end()
+})
+
+test('test STAT with nonexistent path returns 450', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('STAT nonexistent')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '450 File not found')
+
+    await promiseSocket.end()
+})
+
+test('test MDTM returns modification time', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: 50021, user: users, minDataPort: dataPort}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    let promiseSocket = new PromiseSocket(new net.Socket())
+    let socket = promiseSocket.stream
+    await socket.connect(50021, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('EPSV')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), `229 Entering extended passive mode (|||${dataPort}|)`)
+
+    let promiseDataSocket = new PromiseSocket(new net.Socket())
+    let dataSocket = promiseDataSocket.stream
+    await dataSocket.connect(dataPort, 'localhost')
+
+    await promiseSocket.write('STOR mdtmtestfile')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '150 Opening data channel')
+
+    await promiseDataSocket.write('TESTDATA')
+    dataSocket.end()
+    await promiseDataSocket.end()
+
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '226 Successfully transferred "mdtmtestfile"')
+
+    await promiseSocket.write('MDTM mdtmtestfile')
+    content = await promiseSocket.read()
+    assert.match(content.toString().trim(), /^213 \d{14}$/)
+
+    await promiseSocket.end()
+})
+
+test('test MDTM with nonexistent file returns 550', { timeout }, async () => {
+    const users = [
+        {
+            username: 'john',
+            allowLoginWithoutPassword: true,
+        }
+    ]
+    server = new ftpd({cnf: {port: cmdPortTCP, user: users}})
+    assert.ok(server instanceof ftpd)
+    server.start()
+
+    const promiseSocket = new PromiseSocket(new net.Socket())
+    const socket = promiseSocket.stream
+    await socket.connect(cmdPortTCP, 'localhost')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '220 Welcome')
+
+    await promiseSocket.write('USER john')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '232 User logged in')
+
+    await promiseSocket.write('MDTM nonexistent')
+    content = await promiseSocket.read()
+    assert.strictEqual(content.toString().trim(), '550 File not found')
+
+    await promiseSocket.end()
+})
