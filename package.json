@@ -3,6 +3,10 @@
   "id": "jsftpd",
   "version": "1.2.2",
   "description": "FTP server for node.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -24,27 +28,23 @@
     "url": "https://github.com/mailsvb"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "*",
-    "eslint": "*",
-    "eslint-config-standard": "*",
-    "eslint-plugin-babel": "*",
-    "eslint-plugin-import": "*",
-    "eslint-plugin-jsdoc": "*",
-    "eslint-plugin-node": "*",
-    "eslint-plugin-promise": "*",
-    "eslint-plugin-security": "*",
-    "husky": "*",
-    "jest": "^27.3.1",
-    "promise-socket": "^7.0.0"
+    "@eslint/js": "10.0.1",
+    "eslint": "10.4.0",
+    "eslint-plugin-jsdoc": "62.9.0",
+    "eslint-plugin-security": "4.0.0",
+    "globals": "17.6.0",
+    "husky": "9.1.7",
+    "jest": "30.4.2",
+    "promise-socket": "8.0.0"
   },
   "scripts": {
-    "lint:js": "eslint lib/ --ext .js",
+    "lint:js": "eslint lib/",
     "install-dev": "npm install --save-dev && husky install",
-    "test": "jest --runInBand"
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand"
   },
   "license": "MIT",
   "engines": {
-    "node": ">=14"
+    "node": ">=24"
   },
   "bugs": {
     "url": "https://github.com/mailsvb/jsftpd.git/issues"

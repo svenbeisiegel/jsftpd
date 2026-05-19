@@ -1,8 +1,9 @@
-const { ftpd } = require('../index')
-const net = require('net')
-const tls = require('tls')
-const {PromiseSocket, TimeoutError} = require('promise-socket')
-const { sleep, getCmdPortTCP, getDataPort } = require('./utils')
+import { jest } from '@jest/globals'
+import { ftpd } from '../index.js'
+import net from 'node:net'
+import tls from 'node:tls'
+import { PromiseSocket } from 'promise-socket'
+import { sleep, getCmdPortTCP, getDataPort } from './utils.js'
 
 jest.setTimeout(7500)
 let server, content, dataContent = null
@@ -358,7 +359,7 @@ test('test STOR message with handler', async () => {
     content = await promiseSocket.read()
     expect(content.toString().trim()).toBe('226 Successfully transferred "mytestfile"')
 
-    expect(up).toBeCalledTimes(1)
+    expect(up).toHaveBeenCalledTimes(1)
     expect(up).toHaveBeenCalledWith('john', '/', 'mytestfile', Buffer.from('SOMETESTCONTENT'), 0)
 
     await promiseSocket.end()
@@ -413,7 +414,7 @@ test('test STOR message with handler fails', async () => {
     content = await promiseSocket.read()
     expect(content.toString().trim()).toBe('550 Transfer failed "mytestfile"')
 
-    expect(up).toBeCalledTimes(1)
+    expect(up).toHaveBeenCalledTimes(1)
     expect(up).toHaveBeenCalledWith('john', '/', 'mytestfile', Buffer.from('SOMETESTCONTENT'), 0)
 
     await promiseSocket.end()

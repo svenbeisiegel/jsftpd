@@ -1,1 +1,1 @@
-module.exports = require('./lib/jsftpd')
+export { ftpd } from './lib/jsftpd.js'

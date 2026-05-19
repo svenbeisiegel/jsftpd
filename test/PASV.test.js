@@ -1,8 +1,9 @@
-const { ftpd } = require('../index')
-const net = require('net')
-const tls = require('tls')
-const {PromiseSocket, TimeoutError} = require('promise-socket')
-const { sleep, getCmdPortTCP, getDataPort, formatPort } = require('./utils')
+import { jest } from '@jest/globals'
+import { ftpd } from '../index.js'
+import net from 'node:net'
+import tls from 'node:tls'
+import { PromiseSocket } from 'promise-socket'
+import { sleep, getCmdPortTCP, getDataPort, formatPort } from './utils.js'
 
 jest.setTimeout(5000)
 let server, content, dataContent = null
@@ -87,6 +88,7 @@ test('test PASV message fails port unavailable', async () => {
         maxConnections: 0
     }
     server = new ftpd({cnf: config})
+    server._tcp.maxConnections = 10
     expect(server).toBeInstanceOf(ftpd)
     server.start()
 
@@ -121,6 +123,7 @@ test('test PASV message fails port range fails', async () => {
         maxConnections: 0
     }
     server = new ftpd({cnf: config})
+    server._tcp.maxConnections = 10
     expect(server).toBeInstanceOf(ftpd)
     server.start()
 
@@ -207,6 +210,7 @@ test('test EPSV message fails port unavailable', async () => {
         maxConnections: 0
     }
     server = new ftpd({cnf: config})
+    server._tcp.maxConnections = 10
     expect(server).toBeInstanceOf(ftpd)
     server.start()
 

@@ -1,8 +1,9 @@
-const { ftpd } = require('../index')
-const net = require('net')
-const tls = require('tls')
-const {PromiseSocket, TimeoutError} = require('promise-socket')
-const { sleep, getCmdPortTCP, getCmdPortTLS, getDataPort, formatPort } = require('./utils')
+import { jest } from '@jest/globals'
+import { ftpd } from '../index.js'
+import net from 'node:net'
+import tls from 'node:tls'
+import { PromiseSocket } from 'promise-socket'
+import { sleep, getCmdPortTCP, getCmdPortTLS, getDataPort, formatPort } from './utils.js'
 
 jest.setTimeout(5000)
 let server, content, dataContent = null
@@ -58,7 +59,7 @@ test('ftp server can be started on non default ports', async () => {
     content = await promiseSocket.read()
     expect(content.toString().trim()).toBe('220 Welcome')
 
-    expect(handler).toBeCalledTimes(2)
+    expect(handler).toHaveBeenCalledTimes(2)
 
     await promiseSocket.end()
 })

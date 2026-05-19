@@ -1,8 +1,9 @@
-const { ftpd } = require('../index')
-const net = require('net')
-const tls = require('tls')
-const {PromiseSocket, TimeoutError} = require('promise-socket')
-const { sleep, getCmdPortTCP, getDataPort } = require('./utils')
+import { jest } from '@jest/globals'
+import { ftpd } from '../index.js'
+import net from 'node:net'
+import tls from 'node:tls'
+import { PromiseSocket } from 'promise-socket'
+import { sleep, getCmdPortTCP, getDataPort } from './utils.js'
 
 jest.setTimeout(5000)
 let server, content, dataContent = null
@@ -274,8 +275,8 @@ test('test RETR message with handler', async () => {
     expect(content.toString().trim()).toMatch('150 Opening data channel')
     expect(content.toString().trim()).toMatch('226 Successfully transferred "mytestfile"')
 
-    expect(ul).toBeCalledTimes(1)
-    expect(dl).toBeCalledTimes(1)
+    expect(ul).toHaveBeenCalledTimes(1)
+    expect(dl).toHaveBeenCalledTimes(1)
 
     await promiseSocket.end()
 })
@@ -343,8 +344,8 @@ test('test RETR message with handler fails', async () => {
     expect(content.toString().trim()).toMatch('150 Opening data channel')
     expect(content.toString().trim()).toMatch('550 Transfer failed "mytestfile"')
 
-    expect(ul).toBeCalledTimes(1)
-    expect(dl).toBeCalledTimes(1)
+    expect(ul).toHaveBeenCalledTimes(1)
+    expect(dl).toHaveBeenCalledTimes(1)
 
     await promiseSocket.end()
 })

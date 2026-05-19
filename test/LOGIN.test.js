@@ -1,8 +1,9 @@
-const { ftpd } = require('../index')
-const net = require('net')
-const tls = require('tls')
-const {PromiseSocket, TimeoutError} = require('promise-socket')
-const { getCmdPortTCP, getDataPort } = require('./utils')
+import { jest } from '@jest/globals'
+import { ftpd } from '../index.js'
+import net from 'node:net'
+import tls from 'node:tls'
+import { PromiseSocket } from 'promise-socket'
+import { getCmdPortTCP, getDataPort } from './utils.js'
 
 jest.setTimeout(5000)
 let server, content, dataContent = null

@@ -1,8 +1,9 @@
-const { ftpd } = require('../index')
-const net = require('net')
-const tls = require('tls')
-const {PromiseSocket, TimeoutError} = require('promise-socket')
-const { sleep, getCmdPortTCP, getDataPort } = require('./utils')
+import { jest } from '@jest/globals'
+import { ftpd } from '../index.js'
+import net from 'node:net'
+import tls from 'node:tls'
+import { PromiseSocket } from 'promise-socket'
+import { sleep, getCmdPortTCP, getDataPort } from './utils.js'
 
 jest.setTimeout(5000)
 let server, content, dataContent = null
@@ -171,7 +172,7 @@ test('test RNFR/RNTO message using handlers', async () => {
     content = await promiseSocket.read()
     expect(content.toString().trim()).toBe('250 File renamed successfully')
 
-    expect(rn).toBeCalledTimes(1)
+    expect(rn).toHaveBeenCalledTimes(1)
     expect(rn).toHaveBeenCalledWith('john', '/', 'mytestfile', 'someotherfile')
 
     await promiseSocket.end()
@@ -207,7 +208,7 @@ test('test RNFR/RNTO message using handlers failing', async () => {
     content = await promiseSocket.read()
     expect(content.toString().trim()).toBe('550 File rename failed')
 
-    expect(rn).toBeCalledTimes(1)
+    expect(rn).toHaveBeenCalledTimes(1)
     expect(rn).toHaveBeenCalledWith('john', '/', 'mytestfile', 'someotherfile')
 
     await promiseSocket.end()
