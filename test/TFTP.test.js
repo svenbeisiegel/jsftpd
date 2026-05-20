@@ -604,3 +604,62 @@ test('WRQ multi-block transfer', { timeout }, async () => {
         client.close()
     }
 })
+
+test('tftpd server starts with IPv6 by default', { timeout }, async () => {
+    server = new tftpd({ cnf: { port: tftpPort } })
+    server.start()
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    assert.strictEqual(server._socket.address().port, tftpPort)
+    assert.strictEqual(server._socket.type, 'udp6')
+})
+
+test('RRQ over IPv6 returns DATA', { timeout }, async () => {
+    server = new tftpd({ cnf: { port: tftpPort } })
+    server.start()
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    const testContent = 'Hello IPv6 TFTP!'
+    const basefolder = server._opt.cnf.basefolder
+    fs.writeFileSync(path.join(basefolder, 'ipv6file.txt'), testContent)
+
+    const client = dgram.createSocket('udp6')
+    try {
+        const rrq = buildRRQ('ipv6file.txt', 'octet')
+        const resp = await sendAndReceive(client, rrq, tftpPort, '::1')
+
+        assert.strictEqual(resp.readUInt16BE(0), 0x0003)
+        assert.strictEqual(resp.readUInt16BE(2), 1)
+        assert.strictEqual(resp.subarray(4).toString(), testContent)
+    } finally {
+        client.close()
+    }
+})
+
+test('WRQ over IPv6 creates file', { timeout }, async () => {
+    server = new tftpd({ cnf: { port: tftpPort, allowWrite: true } })
+    server.start()
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    const basefolder = server._opt.cnf.basefolder
+    const client = dgram.createSocket('udp6')
+    try {
+        const wrq = buildWRQ('ipv6upload.txt', 'octet')
+        const { data: resp, rinfo } = await receiveMessage(client, client.send(wrq, 0, wrq.length, tftpPort, '::1'))
+
+        assert.strictEqual(resp.readUInt16BE(0), 0x0004)
+        assert.strictEqual(resp.readUInt16BE(2), 0)
+
+        const fileContent = 'IPv6 upload!'
+        const dataPacket = buildDATA(1, fileContent)
+        const ack1 = await sendAndReceive(client, dataPacket, rinfo.port, '::1')
+
+        assert.strictEqual(ack1.readUInt16BE(0), 0x0004)
+        assert.strictEqual(ack1.readUInt16BE(2), 1)
+
+        await new Promise((resolve) => setTimeout(resolve, 200))
+        const written = fs.readFileSync(path.join(basefolder, 'ipv6upload.txt'), 'utf-8')
+        assert.strictEqual(written, fileContent)
+    } finally {
+        client.close()
+    }
+})
