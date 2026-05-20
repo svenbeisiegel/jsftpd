@@ -3,9 +3,9 @@ import { format } from 'node:util'
 const NODE_MAJOR_VERSION = process.versions.node.split('.')[0]
 
 function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms)
+    })
 }
 
 function formatPort(addr, port) {
@@ -26,10 +26,15 @@ function getDataPort() {
     return parseInt(NODE_MAJOR_VERSION + '120')
 }
 
+function getTftpPort() {
+    return parseInt(NODE_MAJOR_VERSION + '069')
+}
+
 export {
     sleep,
     formatPort,
     getCmdPortTCP,
     getCmdPortTLS,
-    getDataPort
+    getDataPort,
+    getTftpPort
 }
