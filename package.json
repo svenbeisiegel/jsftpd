@@ -2,16 +2,12 @@
   "name": "jsftpd",
   "id": "jsftpd",
   "version": "1.2.2",
-  "description": "FTP server for node.js",
+  "description": "FTP/TFTP server for node.js",
   "type": "module",
   "exports": {
     ".": "./index.js"
   },
   "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mailsvb/jsftpd.git"
-  },
   "keywords": [
     "nodejs",
     "ftp",
@@ -23,9 +19,7 @@
     "ftpserver"
   ],
   "author": {
-    "name": "Sven",
-    "email": "mailsvb@gmail.com",
-    "url": "https://github.com/mailsvb"
+    "name": "Sven Beisiegel"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -45,9 +39,5 @@
   "license": "MIT",
   "engines": {
     "node": ">=24"
-  },
-  "bugs": {
-    "url": "https://github.com/mailsvb/jsftpd.git/issues"
-  },
-  "homepage": "https://github.com/mailsvb/jsftpd#readme"
+  }
 }
