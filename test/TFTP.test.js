@@ -1,6 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { tftpd } from '../index.js'
+import { Readable, PassThrough } from 'node:stream'
 import dgram from 'node:dgram'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -391,14 +392,14 @@ test('RRQ with blksize option returns OACK and uses negotiated blksize', { timeo
     }
 })
 
-test('RRQ with handler support', { timeout }, async () => {
+test('RRQ with handler support returns Buffer', { timeout }, async () => {
     const fileData = Buffer.from('Handler served file!')
     const hdl = {
         download: async (filename) => {
             if (filename === 'virtual.txt') return fileData
             return undefined
         },
-        upload: async () => false
+        upload: async () => new PassThrough()
     }
     server = new tftpd({ cnf: { port: tftpPort }, hdl })
     server.start()
@@ -417,10 +418,39 @@ test('RRQ with handler support', { timeout }, async () => {
     }
 })
 
+test('RRQ with handler support returns Stream', { timeout }, async () => {
+    const hdl = {
+        download: async (filename) => {
+            if (filename === 'stream.txt') {
+                const stream = new PassThrough()
+                stream.end(Buffer.from('Streamed content!'))
+                return stream
+            }
+            return undefined
+        },
+        upload: async () => new PassThrough()
+    }
+    server = new tftpd({ cnf: { port: tftpPort }, hdl })
+    server.start()
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    const client = dgram.createSocket('udp4')
+    try {
+        const rrq = buildRRQ('stream.txt', 'octet')
+        const resp = await sendAndReceive(client, rrq, tftpPort)
+
+        assert.strictEqual(resp.readUInt16BE(0), 0x0003)
+        assert.strictEqual(resp.readUInt16BE(2), 1)
+        assert.strictEqual(resp.subarray(4).toString(), 'Streamed content!')
+    } finally {
+        client.close()
+    }
+})
+
 test('RRQ with handler returns file not found', { timeout }, async () => {
     const hdl = {
         download: async () => undefined,
-        upload: async () => false
+        upload: async () => new PassThrough()
     }
     server = new tftpd({ cnf: { port: tftpPort }, hdl })
     server.start()
@@ -439,13 +469,15 @@ test('RRQ with handler returns file not found', { timeout }, async () => {
 })
 
 test('WRQ with handler support', { timeout }, async () => {
-    let uploadedFilename, uploadedData
+    let uploadedFilename
+    const chunks = []
     const hdl = {
         download: async () => undefined,
-        upload: async (filename, data) => {
+        upload: async (filename) => {
             uploadedFilename = filename
-            uploadedData = data
-            return true
+            const stream = new PassThrough()
+            stream.on('data', (chunk) => chunks.push(chunk))
+            return stream
         }
     }
     server = new tftpd({ cnf: { port: tftpPort, allowWrite: true }, hdl })
@@ -467,9 +499,9 @@ test('WRQ with handler support', { timeout }, async () => {
         assert.strictEqual(ack1.readUInt16BE(0), 0x0004)
         assert.strictEqual(ack1.readUInt16BE(2), 1)
 
-        await new Promise((resolve) => setTimeout(resolve, 100))
+        await new Promise((resolve) => setTimeout(resolve, 200))
         assert.strictEqual(uploadedFilename, 'handler_upload.txt')
-        assert.strictEqual(uploadedData.toString(), content)
+        assert.strictEqual(Buffer.concat(chunks).toString(), content)
     } finally {
         client.close()
     }
